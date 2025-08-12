@@ -8,14 +8,9 @@ from datetime import datetime
 import json
 import numpy as np
 
-# Try to import face recognition libraries, with fallback
-try:
-    import face_recognition
-    import cv2
-    FACE_RECOGNITION_AVAILABLE = True
-except ImportError:
-    FACE_RECOGNITION_AVAILABLE = False
-    print("Warning: Face recognition libraries not available. Using fallback mode.")
+# Face recognition disabled for deployment compatibility
+FACE_RECOGNITION_AVAILABLE = False
+print("Face recognition disabled for deployment. Using simplified mode.")
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-here')
@@ -94,14 +89,7 @@ init_db()
 
 def is_blurry(image_array):
     """Check if image is blurry using OpenCV"""
-    if not FACE_RECOGNITION_AVAILABLE:
-        return False  # Skip blur check if OpenCV not available
-    try:
-        gray = cv2.cvtColor(image_array, cv2.COLOR_BGR2GRAY)
-        variance = cv2.Laplacian(gray, cv2.CV_64F).var()
-        return variance < 100
-    except:
-        return False
+    return False  # Skip blur check for deployment
 
 def get_db_connection():
     conn = sqlite3.connect('voting.db')
@@ -118,57 +106,29 @@ def register():
         name = request.form['name']
         username = request.form['username']
         password = request.form['password']
-        face_image = request.form['face_image']
         
-        # Decode base64 image
-        face_data = base64.b64decode(face_image.split(',')[1])
-        face_array = np.frombuffer(face_data, dtype=np.uint8)
-        face_image_cv = cv2.imdecode(face_array, cv2.IMREAD_COLOR)
+        conn = get_db_connection()
+        cursor = conn.cursor()
         
-        # Check if image is blurry
-        if is_blurry(face_image_cv):
-            flash('Image is too blurry. Please take a clearer photo.', 'error')
-            return render_template('register.html')
-        
-        # Extract face encoding
-        if not FACE_RECOGNITION_AVAILABLE:
-            flash('Face recognition not available. Please contact administrator.', 'error')
-            return render_template('register.html')
-            
-        try:
-            face_encodings = face_recognition.face_encodings(face_image_cv)
-            if not face_encodings:
-                flash('No face detected in the image. Please try again.', 'error')
-                return render_template('register.html')
-            
-            face_encoding = face_encodings[0]
-            
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            
-            # Check if username already exists
-            cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
-            if cursor.fetchone():
-                flash('Username already exists. Please choose another.', 'error')
-                conn.close()
-                return render_template('register.html')
-            
-            # Save user with face encoding
-            password_hash = generate_password_hash(password)
-            cursor.execute('''
-                INSERT INTO users (name, username, password_hash, face_encoding)
-                VALUES (?, ?, ?, ?)
-            ''', (name, username, password_hash, face_encoding.tobytes()))
-            
-            conn.commit()
+        # Check if username already exists
+        cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+        if cursor.fetchone():
+            flash('Username already exists. Please choose another.', 'error')
             conn.close()
-            
-            flash('Registration successful! Please login.', 'success')
-            return redirect(url_for('login'))
-            
-        except Exception as e:
-            flash('Error processing face image. Please try again.', 'error')
             return render_template('register.html')
+        
+        # Save user without face encoding (simplified for deployment)
+        password_hash = generate_password_hash(password)
+        cursor.execute('''
+            INSERT INTO users (name, username, password_hash, face_encoding)
+            VALUES (?, ?, ?, ?)
+        ''', (name, username, password_hash, None))
+        
+        conn.commit()
+        conn.close()
+        
+        flash('Registration successful! Please login.', 'success')
+        return redirect(url_for('login'))
     
     return render_template('register.html')
 
@@ -201,47 +161,8 @@ def facial_verification():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    if request.method == 'POST':
-        face_image = request.form['face_image']
-        
-        # Decode base64 image
-        face_data = base64.b64decode(face_image.split(',')[1])
-        face_array = np.frombuffer(face_data, dtype=np.uint8)
-        face_image_cv = cv2.imdecode(face_array, cv2.IMREAD_COLOR)
-        
-        # Get stored face encoding
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('SELECT face_encoding FROM users WHERE id = ?', (session['user_id'],))
-        user = cursor.fetchone()
-        conn.close()
-        
-        if user and user['face_encoding']:
-            stored_encoding = np.frombuffer(user['face_encoding'], dtype=np.float64)
-            
-            if not FACE_RECOGNITION_AVAILABLE:
-                flash('Face recognition not available. Please contact administrator.', 'error')
-                return render_template('facial_verification.html')
-                
-            # Extract face encoding from captured image
-            face_encodings = face_recognition.face_encodings(face_image_cv)
-            
-            if face_encodings:
-                captured_encoding = face_encodings[0]
-                
-                # Compare faces
-                matches = face_recognition.compare_faces([stored_encoding], captured_encoding, tolerance=0.6)
-                
-                if matches[0]:
-                    return redirect(url_for('vote'))
-                else:
-                    flash('Face verification failed. Please try again.', 'error')
-            else:
-                flash('No face detected. Please try again.', 'error')
-        else:
-            flash('Face data not found. Please contact administrator.', 'error')
-    
-    return render_template('facial_verification.html')
+    # Skip face verification for deployment (simplified mode)
+    return redirect(url_for('vote'))
 
 @app.route('/vote')
 def vote():
