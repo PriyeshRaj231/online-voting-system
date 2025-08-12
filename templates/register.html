@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Online Voting System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center mb-0">
+                    <i class="fas fa-user-plus me-2"></i>Voter Registration
+                </h3>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" id="registrationForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Confirm Password</label>
+                                <input type="password" class="form-control" id="confirm_password"
+                                    name="confirm_password" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Face Capture</label>
+                                <div class="webcam-container">
+                                    <video id="video" autoplay></video>
+                                    <button type="button" class="capture-btn" id="captureBtn">
+                                        <i class="fas fa-camera"></i>
+                                    </button>
+                                    <canvas id="canvas" width="640" height="480"></canvas>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <button type="button" class="btn btn-outline-primary" id="startCamera">
+                                        <i class="fas fa-video me-2"></i>Start Camera
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary ms-2" id="stopCamera">
+                                        <i class="fas fa-stop me-2"></i>Stop Camera
+                                    </button>
+                                </div>
+                                <div id="capturedImage" class="mt-3" style="display: none;">
+                                    <img id="preview" class="img-fluid rounded" alt="Captured face">
+                                    <button type="button" class="btn btn-sm btn-outline-danger mt-2" id="retakeBtn">
+                                        <i class="fas fa-redo me-1"></i>Retake Photo
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="face_image" name="face_image">
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" disabled>
+                            <i class="fas fa-user-plus me-2"></i>Register
+                        </button>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-lg ms-2">
+                            <i class="fas fa-arrow-left me-2"></i>Back
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let stream = null;
+    let capturedImageData = null;
+
+    document.getElementById('startCamera').addEventListener('click', async () => {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: 640,
+                    height: 480,
+                    facingMode: 'user'
+                }
+            });
+            document.getElementById('video').srcObject = stream;
+            document.getElementById('startCamera').disabled = true;
+            document.getElementById('stopCamera').disabled = false;
+        } catch (err) {
+            alert('Error accessing camera: ' + err.message);
+        }
+    });
+
+    document.getElementById('stopCamera').addEventListener('click', () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            document.getElementById('video').srcObject = null;
+            document.getElementById('startCamera').disabled = false;
+            document.getElementById('stopCamera').disabled = true;
+        }
+    });
+
+    document.getElementById('captureBtn').addEventListener('click', () => {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+
+        context.drawImage(video, 0, 0, 640, 480);
+        capturedImageData = canvas.toDataURL('image/jpeg');
+
+        document.getElementById('preview').src = capturedImageData;
+        document.getElementById('capturedImage').style.display = 'block';
+        document.getElementById('face_image').value = capturedImageData;
+        document.getElementById('submitBtn').disabled = false;
+    });
+
+    document.getElementById('retakeBtn').addEventListener('click', () => {
+        document.getElementById('capturedImage').style.display = 'none';
+        document.getElementById('face_image').value = '';
+        document.getElementById('submitBtn').disabled = true;
+        capturedImageData = null;
+    });
+
+    document.getElementById('registrationForm').addEventListener('submit', (e) => {
+        if (!capturedImageData) {
+            e.preventDefault();
+            alert('Please capture your face image before registering.');
+            return;
+        }
+
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm_password').value;
+
+        if (password !== confirmPassword) {
+            e.preventDefault();
+            alert('Passwords do not match.');
+            return;
+        }
+    });
+
+    // Stop camera when page is unloaded
+    window.addEventListener('beforeunload', () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    });
+</script>
+{% endblock %}

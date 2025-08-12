@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Vote Submitted Successfully - Online Voting System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .success-container {
+        text-align: center;
+        padding: 50px 20px;
+    }
+
+    .success-icon {
+        font-size: 5rem;
+        color: #28a745;
+        margin-bottom: 20px;
+    }
+
+    .success-title {
+        font-size: 2.5rem;
+        color: #28a745;
+        margin-bottom: 20px;
+        font-weight: bold;
+    }
+
+    .success-message {
+        font-size: 1.2rem;
+        color: #666;
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+
+    .action-buttons {
+        margin-top: 30px;
+    }
+
+    .btn-success-custom {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        border: none;
+        color: white;
+        padding: 15px 30px;
+        border-radius: 25px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        margin: 10px;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-success-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        background: linear-gradient(45deg, #20c997, #28a745);
+        color: white;
+    }
+
+    .btn-outline-custom {
+        background: transparent;
+        border: 2px solid #667eea;
+        color: #667eea;
+        padding: 15px 30px;
+        border-radius: 25px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        margin: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline-custom:hover {
+        background: #667eea;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .confetti {
+        position: fixed;
+        width: 10px;
+        height: 10px;
+        background: #28a745;
+        animation: confetti-fall 3s linear infinite;
+    }
+
+    @keyframes confetti-fall {
+        0% {
+            transform: translateY(-100vh) rotate(0deg);
+            opacity: 1;
+        }
+
+        100% {
+            transform: translateY(100vh) rotate(720deg);
+            opacity: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="success-container">
+    <!-- Confetti Animation -->
+    <div id="confetti-container"></div>
+
+    <div class="success-icon">
+        <i class="fas fa-check-circle"></i>
+    </div>
+
+    <h1 class="success-title">
+        🎉 Vote Submitted Successfully!
+    </h1>
+
+    <div class="success-message">
+        <p>Thank you for participating in the democratic process!</p>
+        <p>Your vote has been recorded and will be counted in the final results.</p>
+        <p><strong>Remember:</strong> You can only vote once per election.</p>
+    </div>
+
+    <div class="action-buttons">
+        <a href="{{ url_for('results') }}" class="btn btn-success-custom">
+            <i class="fas fa-chart-bar me-2"></i>
+            View Results
+        </a>
+
+        <a href="{{ url_for('index') }}" class="btn btn-outline-custom">
+            <i class="fas fa-home me-2"></i>
+            Back to Home
+        </a>
+    </div>
+
+    <div class="mt-4">
+        <small class="text-muted">
+            <i class="fas fa-shield-alt me-1"></i>
+            Your vote is secure and anonymous
+        </small>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Create confetti animation
+    function createConfetti() {
+        const container = document.getElementById('confetti-container');
+        const colors = ['#28a745', '#667eea', '#ffc107', '#dc3545', '#17a2b8'];
+
+        for (let i = 0; i < 50; i++) {
+            setTimeout(() => {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 3 + 's';
+                container.appendChild(confetti);
+
+                // Remove confetti after animation
+                setTimeout(() => {
+                    confetti.remove();
+                }, 3000);
+            }, i * 100);
+        }
+    }
+
+    // Start confetti animation when page loads
+    document.addEventListener('DOMContentLoaded', function () {
+        createConfetti();
+
+        // Auto-redirect to results after 5 seconds
+        setTimeout(() => {
+            window.location.href = '{{ url_for("results") }}';
+        }, 5000);
+    });
+</script>
+{% endblock %}

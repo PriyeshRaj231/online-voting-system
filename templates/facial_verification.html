@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Facial Verification - Online Voting System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center mb-0">
+                    <i class="fas fa-user-check me-2"></i>Facial Verification
+                </h3>
+            </div>
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <p class="lead">Please verify your identity by capturing your face</p>
+                    <p class="text-muted">Welcome, {{ session.name }}! Please look at the camera and click capture.</p>
+                </div>
+
+                <form method="POST" id="verificationForm">
+                    <div class="text-center">
+                        <div class="webcam-container mb-4">
+                            <video id="video" autoplay></video>
+                            <button type="button" class="capture-btn" id="captureBtn">
+                                <i class="fas fa-camera"></i>
+                            </button>
+                            <canvas id="canvas" width="640" height="480"></canvas>
+                        </div>
+
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-outline-primary" id="startCamera">
+                                <i class="fas fa-video me-2"></i>Start Camera
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary ms-2" id="stopCamera">
+                                <i class="fas fa-stop me-2"></i>Stop Camera
+                            </button>
+                        </div>
+
+                        <div id="capturedImage" class="mb-3" style="display: none;">
+                            <img id="preview" class="img-fluid rounded" alt="Captured face" style="max-width: 300px;">
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-danger me-2" id="retakeBtn">
+                                    <i class="fas fa-redo me-1"></i>Retake Photo
+                                </button>
+                                <button type="submit" class="btn btn-sm btn-success" id="verifyBtn">
+                                    <i class="fas fa-check me-1"></i>Verify Face
+                                </button>
+                            </div>
+                        </div>
+
+                        <input type="hidden" id="face_image" name="face_image">
+
+                        <div class="mt-4">
+                            <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let stream = null;
+    let capturedImageData = null;
+
+    document.getElementById('startCamera').addEventListener('click', async () => {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: 640,
+                    height: 480,
+                    facingMode: 'user'
+                }
+            });
+            document.getElementById('video').srcObject = stream;
+            document.getElementById('startCamera').disabled = true;
+            document.getElementById('stopCamera').disabled = false;
+        } catch (err) {
+            alert('Error accessing camera: ' + err.message);
+        }
+    });
+
+    document.getElementById('stopCamera').addEventListener('click', () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            document.getElementById('video').srcObject = null;
+            document.getElementById('startCamera').disabled = false;
+            document.getElementById('stopCamera').disabled = true;
+        }
+    });
+
+    document.getElementById('captureBtn').addEventListener('click', () => {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+
+        context.drawImage(video, 0, 0, 640, 480);
+        capturedImageData = canvas.toDataURL('image/jpeg');
+
+        document.getElementById('preview').src = capturedImageData;
+        document.getElementById('capturedImage').style.display = 'block';
+        document.getElementById('face_image').value = capturedImageData;
+    });
+
+    document.getElementById('retakeBtn').addEventListener('click', () => {
+        document.getElementById('capturedImage').style.display = 'none';
+        document.getElementById('face_image').value = '';
+        capturedImageData = null;
+    });
+
+    document.getElementById('verificationForm').addEventListener('submit', (e) => {
+        if (!capturedImageData) {
+            e.preventDefault();
+            alert('Please capture your face image before verification.');
+            return;
+        }
+
+        // Show loading state
+        document.getElementById('verifyBtn').disabled = true;
+        document.getElementById('verifyBtn').innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Verifying...';
+    });
+
+    // Stop camera when page is unloaded
+    window.addEventListener('beforeunload', () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    });
+</script>
+{% endblock %}

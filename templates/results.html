@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Results - Online Voting System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Voting Results
+                </h3>
+            </div>
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <h4>Election Results</h4>
+                    <p class="text-muted">Total votes cast: {{ total_votes }}</p>
+                </div>
+                
+                {% if results %}
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Vote Distribution</h5>
+                                <canvas id="resultsChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Statistics</h5>
+                                <div class="list-group list-group-flush">
+                                    {% for result in results %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ result.name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ result.vote_count }} votes</small>
+                                        </div>
+                                        <span class="badge bg-primary rounded-pill">
+                                            {% if total_votes > 0 %}
+                                                {{ "%.1f"|format((result.vote_count / total_votes) * 100) }}%
+                                            {% else %}
+                                                0%
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Detailed Results</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Rank</th>
+                                            <th>Candidate</th>
+                                            <th>Votes</th>
+                                            <th>Percentage</th>
+                                            <th>Progress Bar</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for result in results %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-{{ 'success' if loop.index == 1 else 'secondary' }}">
+                                                    {{ loop.index }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <strong>{{ result.name }}</strong>
+                                            </td>
+                                            <td>{{ result.vote_count }}</td>
+                                            <td>
+                                                {% if total_votes > 0 %}
+                                                    {{ "%.1f"|format((result.vote_count / total_votes) * 100) }}%
+                                                {% else %}
+                                                    0%
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar bg-{{ 'success' if loop.index == 1 else 'primary' }}" 
+                                                         style="width: {% if total_votes > 0 %}{{ (result.vote_count / total_votes) * 100 }}{% else %}0{% endif %}%">
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center">
+                    <i class="fas fa-chart-bar fa-4x text-muted mb-3"></i>
+                    <h5>No votes have been cast yet</h5>
+                    <p class="text-muted">Be the first to vote!</p>
+                </div>
+                {% endif %}
+                
+                <div class="text-center mt-4">
+                    {% if session.user_id %}
+                        <a href="{{ url_for('vote') }}" class="btn btn-primary">
+                            <i class="fas fa-vote-yea me-2"></i>Cast Vote
+                        </a>
+                    {% endif %}
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary ms-2">
+                        <i class="fas fa-home me-2"></i>Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+{% if results %}
+const ctx = document.getElementById('resultsChart').getContext('2d');
+const data = {
+    labels: [{% for result in results %}'{{ result.name }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+    datasets: [{
+        label: 'Votes',
+        data: [{% for result in results %}{{ result.vote_count }}{% if not loop.last %}, {% endif %}{% endfor %}],
+        backgroundColor: [
+            '#28a745',
+            '#007bff',
+            '#6c757d',
+            '#dc3545',
+            '#ffc107',
+            '#17a2b8'
+        ],
+        borderWidth: 2,
+        borderColor: '#fff'
+    }]
+};
+
+const config = {
+    type: 'doughnut',
+    data: data,
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+            },
+            title: {
+                display: true,
+                text: 'Vote Distribution'
+            }
+        }
+    }
+};
+
+new Chart(ctx, config);
+{% endif %}
+</script>
+{% endblock %} 

@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+
+{% block title %}Vote - Online Voting System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .candidate-card {
+        border: 2px solid #e9ecef;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+        background: white;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .candidate-card:hover {
+        border-color: #007bff;
+        box-shadow: 0 5px 20px rgba(0, 123, 255, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .candidate-card.selected {
+        border-color: #28a745;
+        background-color: #f8fff9;
+        box-shadow: 0 5px 20px rgba(40, 167, 69, 0.3);
+    }
+
+    .candidate-photo {
+        width: 200px;
+        height: 250px;
+        object-fit: cover;
+        border-radius: 10px;
+        border: 3px solid #dee2e6;
+        margin-bottom: 15px;
+    }
+
+    .candidate-info {
+        text-align: center;
+    }
+
+    .candidate-name {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 8px;
+    }
+
+    .candidate-party {
+        font-size: 1.1rem;
+        color: #666;
+        margin-bottom: 10px;
+        font-weight: 500;
+    }
+
+    .candidate-symbol {
+        font-size: 2rem;
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    .candidate-description {
+        font-size: 0.95rem;
+        color: #555;
+        line-height: 1.4;
+        margin-bottom: 15px;
+    }
+
+    .vote-button {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        border: none;
+        color: white;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
+    }
+
+    .vote-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        background: linear-gradient(45deg, #20c997, #28a745);
+    }
+
+    .vote-button:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .selection-indicator {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #28a745;
+        color: white;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .candidate-card.selected .selection-indicator {
+        opacity: 1;
+    }
+
+    .voting-instructions {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .instructions-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .instructions-text {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+
+    .accessibility-features {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border-left: 4px solid #007bff;
+    }
+
+    .accessibility-title {
+        font-weight: bold;
+        color: #007bff;
+        margin-bottom: 8px;
+    }
+
+    .accessibility-list {
+        margin: 0;
+        padding-left: 20px;
+    }
+
+    .accessibility-list li {
+        margin-bottom: 5px;
+        color: #555;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="text-center mb-4">
+                <i class="fas fa-vote-yea text-primary me-2"></i>
+                Cast Your Vote
+            </h1>
+
+            <!-- Voting Instructions -->
+            <div class="voting-instructions">
+                <div class="instructions-title">
+                    <i class="fas fa-info-circle me-2"></i>
+                    How to Vote
+                </div>
+                <div class="instructions-text">
+                    Click on any candidate's photo to select them, then click "Submit Vote" to confirm your choice.
+                </div>
+            </div>
+
+            <!-- Accessibility Features -->
+            <div class="accessibility-features">
+                <div class="accessibility-title">
+                    <i class="fas fa-universal-access me-2"></i>
+                    Accessibility Features
+                </div>
+                <ul class="accessibility-list">
+                    <li><strong>Large Photos:</strong> Clear, high-quality candidate photos for easy identification</li>
+                    <li><strong>Party Symbols:</strong> Visual symbols to help identify candidates</li>
+                    <li><strong>Party Names:</strong> Clear party affiliations displayed prominently</li>
+                    <li><strong>Descriptions:</strong> Brief descriptions of each candidate's background and focus</li>
+                    <li><strong>Visual Selection:</strong> Clear visual feedback when a candidate is selected</li>
+                </ul>
+            </div>
+
+            <!-- Candidates Grid -->
+            <div class="row" id="candidates-container">
+                {% for candidate in candidates %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="candidate-card position-relative" data-candidate-id="{{ candidate.id }}">
+                        <div class="selection-indicator">
+                            <i class="fas fa-check"></i>
+                        </div>
+
+                        <div class="candidate-info">
+                            <img src="/{{ candidate.photo_path }}" alt="Photo of {{ candidate.name }}"
+                                class="candidate-photo" onerror="this.src='/static/candidates/placeholder.jpg'">
+
+                            <div class="candidate-symbol">{{ candidate.symbol or '👤' }}</div>
+                            <div class="candidate-name">{{ candidate.name }}</div>
+                            <div class="candidate-party">{{ candidate.party or 'Independent' }}</div>
+
+                            {% if candidate.description %}
+                            <div class="candidate-description">
+                                {{ candidate.description }}
+                            </div>
+                            {% endif %}
+
+                            <button class="btn vote-button select-candidate" data-candidate-id="{{ candidate.id }}"
+                                data-candidate-name="{{ candidate.name }}">
+                                <i class="fas fa-hand-pointer me-2"></i>
+                                Select This Candidate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Submit Vote Section -->
+            <div class="text-center mt-4 mb-5" id="submit-section" style="display: none;">
+                <div class="alert alert-success" role="alert">
+                    <h4><i class="fas fa-check-circle me-2"></i>Candidate Selected</h4>
+                    <p class="mb-3">You have selected: <strong id="selected-candidate-name"></strong></p>
+                    <button class="btn btn-success btn-lg" id="submit-vote-btn">
+                        <i class="fas fa-paper-plane me-2"></i>
+                        Submit My Vote
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                    Confirm Your Vote
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to vote for <strong id="modal-candidate-name"></strong>?</p>
+                <p class="text-muted"><small>This action cannot be undone. You can only vote once.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-success" id="confirm-vote-btn">
+                    <i class="fas fa-check me-2"></i>Yes, Submit My Vote
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let selectedCandidateId = null;
+    let selectedCandidateName = null;
+
+    // Handle candidate selection
+    document.querySelectorAll('.select-candidate').forEach(button => {
+        button.addEventListener('click', function () {
+            const candidateId = this.getAttribute('data-candidate-id');
+            const candidateName = this.getAttribute('data-candidate-name');
+
+            // Remove previous selection
+            document.querySelectorAll('.candidate-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // Select current candidate
+            const card = this.closest('.candidate-card');
+            card.classList.add('selected');
+
+            selectedCandidateId = candidateId;
+            selectedCandidateName = candidateName;
+
+            // Show submit section
+            document.getElementById('selected-candidate-name').textContent = candidateName;
+            document.getElementById('submit-section').style.display = 'block';
+
+            // Scroll to submit section
+            document.getElementById('submit-section').scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        });
+    });
+
+    // Handle vote submission
+    document.getElementById('submit-vote-btn').addEventListener('click', function () {
+        if (!selectedCandidateId) {
+            alert('Please select a candidate first.');
+            return;
+        }
+
+        // Show confirmation modal
+        document.getElementById('modal-candidate-name').textContent = selectedCandidateName;
+        const modal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+        modal.show();
+    });
+
+    // Handle final confirmation
+    document.getElementById('confirm-vote-btn').addEventListener('click', function () {
+        const formData = new FormData();
+        formData.append('candidate_id', selectedCandidateId);
+
+        fetch('/submit-vote', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Try to show SweetAlert, fallback to direct redirect if it fails
+                    try {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Vote Submitted Successfully!',
+                            text: data.message,
+                            confirmButtonText: 'Continue',
+                            allowOutsideClick: false,
+                            timer: 2000,
+                            timerProgressBar: true
+                        }).then((result) => {
+                            // Redirect to success page
+                            window.location.href = '/vote-success';
+                        });
+                    } catch (error) {
+                        // Fallback: redirect directly to success page
+                        console.log('SweetAlert not available, redirecting directly');
+                        window.location.href = '/vote-success';
+                    }
+                } else {
+                    try {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.message
+                        });
+                    } catch (error) {
+                        // Fallback: show alert
+                        alert('Error: ' + data.message);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                try {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred while submitting your vote. Please try again.'
+                    });
+                } catch (error) {
+                    // Fallback: show alert
+                    alert('An error occurred while submitting your vote. Please try again.');
+                }
+            });
+
+        // Hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('confirmationModal'));
+        modal.hide();
+    });
+
+    // Add keyboard navigation
+    document.addEventListener('keydown', function (e) {
+        const candidates = document.querySelectorAll('.candidate-card');
+        const currentIndex = Array.from(candidates).findIndex(card => card.classList.contains('selected'));
+
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            const nextIndex = (currentIndex + 1) % candidates.length;
+            candidates[nextIndex].querySelector('.select-candidate').click();
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            const prevIndex = currentIndex <= 0 ? candidates.length - 1 : currentIndex - 1;
+            candidates[prevIndex].querySelector('.select-candidate').click();
+        } else if (e.key === 'Enter' && selectedCandidateId) {
+            e.preventDefault();
+            document.getElementById('submit-vote-btn').click();
+        }
+    });
+
+    // Add focus indicators for accessibility
+    document.querySelectorAll('.candidate-card').forEach(card => {
+        card.addEventListener('focus', function () {
+            this.style.outline = '3px solid #007bff';
+        });
+
+        card.addEventListener('blur', function () {
+            this.style.outline = 'none';
+        });
+    });
+</script>
+{% endblock %}

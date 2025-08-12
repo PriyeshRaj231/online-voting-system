@@ -1,0 +1,570 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Online Voting System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .stats-label {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+
+    .candidate-table {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .candidate-photo-small {
+        width: 60px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 2px solid #dee2e6;
+    }
+
+    .add-candidate-form {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        border-left: 4px solid #007bff;
+    }
+
+    .form-section {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 8px;
+    }
+
+    .photo-preview {
+        width: 150px;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 10px;
+        border: 3px solid #dee2e6;
+        margin-top: 10px;
+    }
+
+    .symbol-selector {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .symbol-option {
+        font-size: 1.5rem;
+        padding: 10px;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .symbol-option:hover {
+        border-color: #007bff;
+        background-color: #f8f9fa;
+    }
+
+    .symbol-option.selected {
+        border-color: #007bff;
+        background-color: #e3f2fd;
+    }
+
+    .party-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .party-option {
+        padding: 8px 16px;
+        border: 2px solid #dee2e6;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+    }
+
+    .party-option:hover {
+        border-color: #007bff;
+        background-color: #f8f9fa;
+    }
+
+    .party-option.selected {
+        border-color: #007bff;
+        background-color: #007bff;
+        color: white;
+    }
+
+    .clear-votes-section {
+        border: 2px solid #ffc107;
+        border-radius: 10px;
+        background: #fff3cd;
+    }
+
+    .clear-votes-section .card-header {
+        background: linear-gradient(45deg, #ffc107, #ff8c00);
+        color: #856404;
+        border-bottom: 2px solid #ffc107;
+    }
+
+    .clear-votes-section .btn-danger {
+        background: linear-gradient(45deg, #dc3545, #c82333);
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3);
+    }
+
+    .clear-votes-section .btn-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+        background: linear-gradient(45deg, #c82333, #dc3545);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="text-center mb-4">
+                <i class="fas fa-cog text-primary me-2"></i>
+                Admin Dashboard
+            </h1>
+
+            <!-- Statistics Section -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="stats-card">
+                        <div class="stats-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stats-content">
+                            <h3>{{ total_users }}</h3>
+                            <p>Total Users</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-card">
+                        <div class="stats-icon">
+                            <i class="fas fa-vote-yea"></i>
+                        </div>
+                        <div class="stats-content">
+                            <h3>{{ total_votes }}</h3>
+                            <p>Total Votes</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-card">
+                        <div class="stats-icon">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div class="stats-content">
+                            <h3>{{ total_candidates }}</h3>
+                            <p>Candidates</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-card">
+                        <div class="stats-icon">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="stats-content">
+                            <h3>{{ voter_turnout }}%</h3>
+                            <p>Voter Turnout</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clear Votes Section -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card clear-votes-section">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Clear All Votes
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-warning" role="alert">
+                                <h6><i class="fas fa-warning me-2"></i>Warning</h6>
+                                <p class="mb-2">This action will permanently delete all submitted votes and reset all
+                                    users' voting status.</p>
+                                <p class="mb-0"><strong>This action cannot be undone!</strong></p>
+                            </div>
+                            <button class="btn btn-danger" id="clear-votes-btn">
+                                <i class="fas fa-trash me-2"></i>
+                                Clear All Votes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Candidate Form -->
+            <div class="add-candidate-form">
+                <h3 class="mb-3">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Add New Candidate
+                </h3>
+
+                <form action="{{ url_for('add_candidate') }}" method="POST" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-section">
+                                <label class="form-label">Candidate Name *</label>
+                                <input type="text" name="name" class="form-control" required
+                                    placeholder="Enter candidate's full name">
+                            </div>
+
+                            <div class="form-section">
+                                <label class="form-label">Political Party</label>
+                                <div class="party-options">
+                                    <div class="party-option" data-party="Democratic Party">Democratic Party</div>
+                                    <div class="party-option" data-party="Republican Party">Republican Party</div>
+                                    <div class="party-option" data-party="Independent Party">Independent Party</div>
+                                    <div class="party-option" data-party="Progressive Party">Progressive Party</div>
+                                    <div class="party-option" data-party="Conservative Party">Conservative Party</div>
+                                    <div class="party-option" data-party="Green Party">Green Party</div>
+                                    <div class="party-option" data-party="Other">Other</div>
+                                </div>
+                                <input type="hidden" name="party" id="selected-party" value="Independent">
+                            </div>
+
+                            <div class="form-section">
+                                <label class="form-label">Description</label>
+                                <textarea name="description" class="form-control" rows="3"
+                                    placeholder="Brief description of candidate's background and focus areas"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-section">
+                                <label class="form-label">Candidate Photo</label>
+                                <input type="file" name="photo" class="form-control" accept="image/*" id="photo-input"
+                                    onchange="previewPhoto(this)">
+                                <small class="text-muted">Upload a clear photo (JPG, PNG, GIF, WebP). Max 16MB.</small>
+                                <img id="photo-preview" class="photo-preview" style="display: none;">
+                            </div>
+
+                            <div class="form-section">
+                                <label class="form-label">Party Symbol</label>
+                                <div class="symbol-selector">
+                                    <div class="symbol-option" data-symbol="📚">📚</div>
+                                    <div class="symbol-option" data-symbol="💼">💼</div>
+                                    <div class="symbol-option" data-symbol="🌱">🌱</div>
+                                    <div class="symbol-option" data-symbol="🏥">🏥</div>
+                                    <div class="symbol-option" data-symbol="🛡️">🛡️</div>
+                                    <div class="symbol-option" data-symbol="🏛️">🏛️</div>
+                                    <div class="symbol-option" data-symbol="🌍">🌍</div>
+                                    <div class="symbol-option" data-symbol="💡">💡</div>
+                                    <div class="symbol-option" data-symbol="🤝">🤝</div>
+                                    <div class="symbol-option" data-symbol="👤">👤</div>
+                                </div>
+                                <input type="hidden" name="symbol" id="selected-symbol" value="👤">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-plus me-2"></i>
+                            Add Candidate
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Candidates Table -->
+            <div class="candidate-table">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        Manage Candidates
+                    </h4>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Photo</th>
+                                <th>Name</th>
+                                <th>Party</th>
+                                <th>Symbol</th>
+                                <th>Description</th>
+                                <th>Votes</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for candidate in candidates %}
+                            <tr>
+                                <td>
+                                    <img src="/{{ candidate.photo_path }}" alt="Photo of {{ candidate.name }}"
+                                        class="candidate-photo-small"
+                                        onerror="this.src='/static/candidates/placeholder.jpg'">
+                                </td>
+                                <td>
+                                    <strong>{{ candidate.name }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ candidate.party or 'Independent' }}</span>
+                                </td>
+                                <td>
+                                    <span style="font-size: 1.5rem;">{{ candidate.symbol or '👤' }}</span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ candidate.description or 'No description available' }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">{{ candidate.vote_count }}</span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('delete_candidate', candidate_id=candidate.id) }}"
+                                        class="btn btn-danger btn-sm"
+                                        onclick="return confirm('Are you sure you want to delete {{ candidate.name }}? This action cannot be undone.')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="text-center mt-4">
+                <a href="{{ url_for('results') }}" class="btn btn-info btn-lg me-2">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    View Results
+                </a>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-sign-out-alt me-2"></i>
+                    Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Clear Votes Confirmation Modal -->
+<div class="modal fade" id="clearVotesModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Confirm Clear All Votes
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-trash-alt text-danger" style="font-size: 3rem;"></i>
+                </div>
+                <h6 class="text-center text-danger mb-3">⚠️ WARNING ⚠️</h6>
+                <p class="text-center">This action will:</p>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-times-circle text-danger me-2"></i>Permanently delete ALL submitted votes</li>
+                    <li><i class="fas fa-times-circle text-danger me-2"></i>Reset ALL users' voting status</li>
+                    <li><i class="fas fa-times-circle text-danger me-2"></i>Clear all voting history</li>
+                </ul>
+                <div class="alert alert-danger mt-3">
+                    <strong>This action cannot be undone!</strong>
+                </div>
+                <p class="text-center text-muted">
+                    <small>Type "CLEAR VOTES" to confirm</small>
+                </p>
+                <input type="text" class="form-control text-center" id="confirmText" placeholder="Type CLEAR VOTES">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmClearVotes" disabled>
+                    <i class="fas fa-trash me-2"></i>Clear All Votes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Party selection
+    document.querySelectorAll('.party-option').forEach(option => {
+        option.addEventListener('click', function () {
+            document.querySelectorAll('.party-option').forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+            document.getElementById('selected-party').value = this.textContent;
+        });
+    });
+
+    // Symbol selection
+    document.querySelectorAll('.symbol-option').forEach(option => {
+        option.addEventListener('click', function () {
+            document.querySelectorAll('.symbol-option').forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+            document.getElementById('selected-symbol').value = this.textContent;
+        });
+    });
+
+    // Photo preview
+    function previewPhoto(input) {
+        const preview = document.getElementById('photo-preview');
+        const file = input.files[0];
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.style.display = 'none';
+        }
+    }
+
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function (e) {
+        const name = document.querySelector('input[name="name"]').value.trim();
+        if (!name) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Please enter a candidate name.'
+            });
+            return false;
+        }
+
+        // Show loading state
+        const submitBtn = document.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Adding Candidate...';
+        submitBtn.disabled = true;
+
+        // Re-enable after a delay (in case of error)
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 5000);
+    });
+
+    // Clear Votes functionality
+    document.getElementById('clear-votes-btn').addEventListener('click', function () {
+        // Show confirmation modal
+        const modal = new bootstrap.Modal(document.getElementById('clearVotesModal'));
+        modal.show();
+    });
+
+    // Handle confirmation text input
+    document.getElementById('confirmText').addEventListener('input', function () {
+        const confirmBtn = document.getElementById('confirmClearVotes');
+        if (this.value === 'CLEAR VOTES') {
+            confirmBtn.disabled = false;
+            confirmBtn.classList.remove('btn-secondary');
+            confirmBtn.classList.add('btn-danger');
+        } else {
+            confirmBtn.disabled = true;
+            confirmBtn.classList.remove('btn-danger');
+            confirmBtn.classList.add('btn-secondary');
+        }
+    });
+
+    // Handle final confirmation
+    document.getElementById('confirmClearVotes').addEventListener('click', function () {
+        // Show loading state
+        Swal.fire({
+            title: 'Clearing votes...',
+            text: 'Please wait while we process the request.',
+            icon: 'info',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch('{{ url_for("clear_votes") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Votes Cleared Successfully!',
+                        text: data.message,
+                        showConfirmButton: false,
+                        timer: 2000
+                    }).then(() => {
+                        location.reload(); // Reload the page to show updated stats
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message || 'Failed to clear votes.'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'An unexpected error occurred while clearing votes.'
+                });
+            });
+
+        // Hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('clearVotesModal'));
+        modal.hide();
+
+        // Reset confirmation text
+        document.getElementById('confirmText').value = '';
+        document.getElementById('confirmClearVotes').disabled = true;
+    });
+</script>
+{% endblock %}
