@@ -1,14 +1,21 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-import face_recognition
-import cv2
-import numpy as np
 import sqlite3
 import os
 import base64
 from datetime import datetime
 import json
+import numpy as np
+
+# Try to import face recognition libraries, with fallback
+try:
+    import face_recognition
+    import cv2
+    FACE_RECOGNITION_AVAILABLE = True
+except ImportError:
+    FACE_RECOGNITION_AVAILABLE = False
+    print("Warning: Face recognition libraries not available. Using fallback mode.")
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-here')
@@ -87,9 +94,14 @@ init_db()
 
 def is_blurry(image_array):
     """Check if image is blurry using OpenCV"""
-    gray = cv2.cvtColor(image_array, cv2.COLOR_BGR2GRAY)
-    variance = cv2.Laplacian(gray, cv2.CV_64F).var()
-    return variance < 100
+    if not FACE_RECOGNITION_AVAILABLE:
+        return False  # Skip blur check if OpenCV not available
+    try:
+        gray = cv2.cvtColor(image_array, cv2.COLOR_BGR2GRAY)
+        variance = cv2.Laplacian(gray, cv2.CV_64F).var()
+        return variance < 100
+    except:
+        return False
 
 def get_db_connection():
     conn = sqlite3.connect('voting.db')
@@ -119,6 +131,10 @@ def register():
             return render_template('register.html')
         
         # Extract face encoding
+        if not FACE_RECOGNITION_AVAILABLE:
+            flash('Face recognition not available. Please contact administrator.', 'error')
+            return render_template('register.html')
+            
         try:
             face_encodings = face_recognition.face_encodings(face_image_cv)
             if not face_encodings:
@@ -203,6 +219,10 @@ def facial_verification():
         if user and user['face_encoding']:
             stored_encoding = np.frombuffer(user['face_encoding'], dtype=np.float64)
             
+            if not FACE_RECOGNITION_AVAILABLE:
+                flash('Face recognition not available. Please contact administrator.', 'error')
+                return render_template('facial_verification.html')
+                
             # Extract face encoding from captured image
             face_encodings = face_recognition.face_encodings(face_image_cv)
             
